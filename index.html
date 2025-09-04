@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>APPLE OF FORTUNE</title>
+  <style>
+    :root{
+      --bg: #1e90ff;
+      --text: #fff;
+      --btn-bg: rgba(255,255,255,.15);
+      --btn-bg-hover: rgba(255,255,255,.25);
+      --btn-border: rgba(255,255,255,.35);
+      --shadow: 0 10px 30px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.1);
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%;margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans","Tajawal",sans-serif;color:var(--text);background:var(--bg);}
+
+    .wrap{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:48px 16px;position:relative;transition:background .4s ease}
+    header{position:absolute;top:20px;left:24px;right:24px;text-align:center}
+    .brand{font-weight:800;font-size:20px}
+
+    .number{font-size:clamp(80px,25vmin,200px);font-weight:900;margin:0 0 8px;text-shadow:var(--shadow);user-select:none;display:inline-block;min-width:2ch}
+
+    .btn{display:inline-block;padding:14px 22px;border-radius:14px;border:1px solid var(--btn-border);background:var(--btn-bg);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);color:var(--text);font-weight:700;cursor:pointer;transition:transform .08s ease,background .2s ease,opacity .15s ease;box-shadow:var(--shadow);margin-top:14px}
+    .btn:active{transform:translateY(1px) scale(.99)}
+    .btn:hover{background:var(--btn-bg-hover)}
+    .btn[disabled]{opacity:.5;cursor:default}
+
+    .footer{position:absolute;bottom:16px;left:0;right:0;text-align:center;font-size:12px;opacity:.8}
+
+    .timestamp{margin-top:14px;opacity:.95;font-weight:600;color:rgba(255,255,255,.85);font-size:clamp(14px,3.5vmin,18px)}
+
+    /* small pop animation when number changes */
+    .pop{transform:scale(1.08);transition:transform .12s ease}
+
+    /* responsive tweaks */
+    @media (max-width:420px){.brand{font-size:16px}.btn{padding:12px 18px}}
+  </style>
+</head>
+<body>
+  <div id="gamePage" class="wrap" role="main">
+    <header><div class="brand">APPLE OF FORTUNE</div></header>
+
+    <div id="number" class="number" aria-live="polite">—</div>
+
+    <button id="spinBtn" class="btn" type="button" aria-label="ابدأ الدوران">ابدأ</button>
+
+    <div id="timestamp" class="timestamp" aria-hidden="false"></div>
+
+    <div class="footer">Made for NERO VIP BET COMPANY</div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const numberEl = document.getElementById('number');
+      const tsEl = document.getElementById('timestamp');
+      const btn = document.getElementById('spinBtn');
+      const wrap = document.getElementById('gamePage');
+
+      // ألوان لكل رقم (1-5)
+      const colors = {
+        1: '#ff6b6b',
+        2: '#ffd166',
+        3: '#6bcB77',
+        4: '#8e44ad',
+        5: '#1e90ff',
+        default: '#1e90ff'
+      };
+
+      // تأكد من عرض الوقت الحالي بصيغة مقروءة
+      function formatNow(){
+        try{
+          const locale = (navigator.languages && navigator.languages.length) ? navigator.languages[0] : navigator.language || 'en-US';
+          const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+          const now = new Date();
+          const opts = { day:'2-digit', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit', hour12:false, timeZone: tz };
+          return new Intl.DateTimeFormat(locale, opts).format(now);
+        }catch(e){
+          // fallback
+          return new Date().toLocaleString();
+        }
+      }
+
+      // تعطيل/تمكين الزر مع حالة دوران
+      let isSpinning = false;
+
+      function setBackgroundFor(num){
+        const col = colors[num] || colors.default;
+        wrap.style.background = col;
+      }
+
+      // وظيفة الدوران: تأثير تباطؤ لطيف
+      function spin(){
+        if(isSpinning) return; // منع الضغط المتكرر
+        isSpinning = true;
+        btn.disabled = true;
+
+        // خطوات الدوران العشوائية
+        const steps = 28 + Math.floor(Math.random()*12); // بين 28 و 39
+        let delay = 25; // البداية سريعة
+        let total = 0;
+
+        for(let i=0;i<steps;i++){
+          // زيادة التأخير تدريجياً لإعطاء إحساس بالتباطؤ
+          delay = delay * (1 + (i / (steps * 12))); // زيادة طفيفة كل خطوة
+          total += Math.round(delay);
+
+          setTimeout(() => {
+            const n = Math.floor(Math.random()*5) + 1; // 1..5
+            numberEl.textContent = n;
+            // صغير بوب عند تغيير الرقم
+            numberEl.classList.remove('pop');
+            void numberEl.offsetWidth; // force reflow
+            numberEl.classList.add('pop');
+          }, total);
+        }
+
+        // بعد انتهاء كل الخطوات نحدد الرقم النهائي
+        const finalDelay = total + 60;
+        setTimeout(() => {
+          const finalNum = Math.floor(Math.random()*5) + 1;
+          numberEl.textContent = finalNum;
+          numberEl.classList.remove('pop');
+          void numberEl.offsetWidth;
+          numberEl.classList.add('pop');
+
+          setBackgroundFor(finalNum);
+          tsEl.textContent = formatNow();
+
+          // إعادة الحالة
+          isSpinning = false;
+          btn.disabled = false;
+        }, finalDelay);
+      }
+
+      // توصيل الأحداث
+      btn.addEventListener('click', spin);
+      // دعم الضغط بالكيبورد (Enter/Space)
+      btn.addEventListener('keydown', (e)=>{
+        if(e.key === 'Enter' || e.key === ' '){
+          e.preventDefault();
+          spin();
+        }
+      });
+
+      // إظهار وقت التحميل الأولي
+      tsEl.textContent = formatNow();
+      // لون افتراضي
+      setBackgroundFor('default');
+
+      // نصيحة: لو ما ظهرش شيء عند الفتح، افتح Console (F12) وشوف للأخطاء.
+    });
+  </script>
+</body>
+</html>
